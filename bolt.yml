@@ -1,5 +1,10 @@
 # Bolt Development Tasks
 
+welcome:
+  desc: Welcome to Bolt!
+  cmds:
+    - echo "⚡ Welcome to Bolt! The fast, aesthetic task runner."
+
 run:
   desc: Run Bolt (dev mode)
   cmds:
