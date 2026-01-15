@@ -5,6 +5,8 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Rust](https://img.shields.io/badge/built_with-Rust-orange.svg)
 
+![Bolt Demo](assets/demo.gif)
+
 ## 🚀 Features
 
 - **Zero Config Overhead**: compatible with `Taskfile` or use the simplified `bolt.yml` format.
@@ -27,9 +29,10 @@
 
 2. **Create a `bolt.yml`**:
    ```yaml
-   dev:
-     cmds:
-       - cargo run
+  start:
+   desc: Start the development server
+   cmds:
+      - npm run dev
    ```
 
 3. **Run it**:
