@@ -24,7 +24,7 @@
 
 1. **Install Bolt**:
    ```bash
-   cargo install --git https://github.com/yourusername/bolt
+   cargo install --git https://github.com/erikandreasdev/bolt
    ```
 
 2. **Create a `bolt.yml`**:
