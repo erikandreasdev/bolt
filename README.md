@@ -35,14 +35,14 @@ Everything you need to master Bolt:
 
    ```yaml
    tasks:
-   run:
-    desc: Run the Spring Boot app
-    cmds:
-      - mvn spring-boot:run
-   test:
-    desc: Run unit tests
-    cmds:
-      - mvn test
+      run:
+      desc: Run the Spring Boot app
+      cmds:
+         - mvn spring-boot:run
+      test:
+      desc: Run unit tests
+      cmds:
+         - mvn test
    ```
 
 3. **Run**:
