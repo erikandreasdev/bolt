@@ -1,57 +1,56 @@
-tasks:
+# Bolt Development Tasks
 
-  build:
-    desc: Build the project in debug mode
-    cmds:
-      - cargo build
+run:
+  desc: Run Bolt (dev mode)
+  cmds:
+    - cargo run
 
-  release:
-    desc: Build the project in release mode
-    cmds:
-      - cargo build --release
+build:
+  desc: Build debug binary
+  cmds:
+    - cargo build
 
-  run:
-    desc: Run the project
-    cmds:
-      - cargo run
+release:
+  desc: Build optimized release binary
+  cmds:
+    - cargo build --release
 
-  test:
-    desc: Run the test suite
-    cmds:
-      - cargo test
+install:
+  desc: Install Bolt locally from source
+  cmds:
+    - cargo install --path .
 
-  check:
-    desc: Check code for compilation errors
-    cmds:
-      - cargo check
+test:
+  desc: Run test suite
+  cmds:
+    - cargo test
 
-  lint:
-    desc: Lint code with Clippy
-    cmds:
-      - cargo clippy
+lint:
+  desc: Run clippy linter (strict)
+  cmds:
+    - cargo clippy -- -D warnings
 
-  fmt:
-    desc: Format code
-    cmds:
-      - cargo fmt
+fmt:
+  desc: Format code
+  cmds:
+    - cargo fmt
 
-  clean:
-    desc: Clean build artifacts
-    cmds:
-      - cargo clean
+check:
+  desc: Fast compile check
+  cmds:
+    - cargo check
 
-  multi-step:
-    desc: Demo of multiple commands running in sequence
-    cmds:
-      - echo "Starting step 1..."
-      - sleep 1
-      - echo "Step 2: Listing files:"
-      - ls -1 | head -n 3
-      - ls -1 | head -n 3
-      - echo "Done!"
+doc:
+  desc: Build and open documentation
+  cmds:
+    - cargo doc --open
 
-  fake-server:
-    desc: Simulates a long-running server process
-    cmds:
-      - echo "Starting server on port 8080..."
-      - while true; do echo "Server running... $(date)"; sleep 2; done
+clean:
+  desc: Clean build artifacts
+  cmds:
+    - cargo clean
+
+demo:
+  desc: Record VHS demo tape
+  cmds:
+    - vhs demo.tape

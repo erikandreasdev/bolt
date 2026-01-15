@@ -1,0 +1,156 @@
+# Spring Boot Template
+# Copy this to your project root as bolt.yml
+
+# --- 🚀 App Execution ---
+start:
+  desc: Run the application
+  cmds:
+    - mvn spring-boot:run
+
+debug:
+  desc: Run in debug mode (port 5005)
+  cmds:
+    - mvn spring-boot:run -Dspring-boot.run.jvmArguments="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+
+restart:
+  desc: Force restart (requires devtools)
+  cmds:
+    - mvn spring-boot:run
+
+# --- 🧪 Testing ---
+test:
+  desc: Run all tests
+  cmds:
+    - mvn test
+
+test-unit:
+  desc: Run unit tests only (skip integration)
+  cmds:
+    - mvn test -Dtest="!*IT"
+
+test-it:
+  desc: Run integration tests only
+  cmds:
+    - mvn failsafe:integration-test failsafe:verify
+
+coverage:
+  desc: Generate JaCoCo coverage report
+  cmds:
+    - mvn jacoco:report
+    - echo "Open target/site/jacoco/index.html to view report"
+
+# --- 📦 Build & Packaging ---
+clean:
+  desc: Clean target directory
+  cmds:
+    - mvn clean
+
+build:
+  desc: Build JAR (skip tests)
+  cmds:
+    - mvn package -DskipTests
+
+verify:
+  desc: Build, test, and verify
+  cmds:
+    - mvn verify
+
+install:
+  desc: Install to local Maven repository
+  cmds:
+    - mvn install -DskipTests
+
+sources:
+  desc: Download sources and javadocs
+  cmds:
+    - mvn dependency:sources dependency:resolve -Dclassifier=javadoc
+
+# --- 🔍 Quality & Analysis ---
+lint:
+  desc: Check code style (Checkstyle)
+  cmds:
+    - mvn checkstyle:check
+
+format:
+  desc: Format code (Spotless)
+  cmds:
+    - mvn spotless:apply || echo "Spotless plugin not configured"
+
+tree:
+  desc: Show dependency tree
+  cmds:
+    - mvn dependency:tree
+
+outdated:
+  desc: Check for dependency updates
+  cmds:
+    - mvn versions:display-dependency-updates
+
+sonar:
+  desc: Run SonarQube analysis
+  cmds:
+    - mvn sonar:sonar
+
+# --- 🐳 Docker & Environment ---
+docker-build:
+  desc: Build OCI image (using Spring Boot Maven Plugin)
+  cmds:
+    - mvn spring-boot:build-image
+
+compose-up:
+  desc: Start local infrastructure (DB, Redis, etc.)
+  cmds:
+    - docker-compose up -d
+
+compose-down:
+  desc: Stop local infrastructure
+  cmds:
+    - docker-compose down
+
+compose-logs:
+  desc: Tail docker-compose logs
+  cmds:
+    - docker-compose logs -f
+
+client:
+  desc: Open Database Client (specific to project, e.g., psql)
+  cmds:
+    - docker-compose exec db psql -U postgres
+
+prune:
+  desc: Prune unused docker objects
+  cmds:
+    - docker system prune -f
+
+# --- 🗄️ Database ---
+db-migrate:
+  desc: Run migrations (Flyway)
+  cmds:
+    - mvn flyway:migrate
+
+db-info:
+  desc: Show migration info
+  cmds:
+    - mvn flyway:info
+
+db-clean:
+  desc: "Clean database schema (Warning: destructive)"
+  cmds:
+    - mvn flyway:clean
+
+# --- 🛠️ Utilities ---
+health:
+  desc: Check Actuator health endpoint
+  cmds:
+    - curl -s http://localhost:8080/actuator/health | jq .
+
+env:
+  desc: Show active Maven profiles
+  cmds:
+    - mvn help:active-profiles
+
+clean-all:
+  desc: Deep clean (mvn clean + docker down)
+  cmds:
+    - mvn clean
+    - docker-compose down -v
