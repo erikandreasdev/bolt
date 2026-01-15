@@ -1,0 +1,57 @@
+tasks:
+
+  build:
+    desc: Build the project in debug mode
+    cmds:
+      - cargo build
+
+  release:
+    desc: Build the project in release mode
+    cmds:
+      - cargo build --release
+
+  run:
+    desc: Run the project
+    cmds:
+      - cargo run
+
+  test:
+    desc: Run the test suite
+    cmds:
+      - cargo test
+
+  check:
+    desc: Check code for compilation errors
+    cmds:
+      - cargo check
+
+  lint:
+    desc: Lint code with Clippy
+    cmds:
+      - cargo clippy
+
+  fmt:
+    desc: Format code
+    cmds:
+      - cargo fmt
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - cargo clean
+
+  multi-step:
+    desc: Demo of multiple commands running in sequence
+    cmds:
+      - echo "Starting step 1..."
+      - sleep 1
+      - echo "Step 2: Listing files:"
+      - ls -1 | head -n 3
+      - ls -1 | head -n 3
+      - echo "Done!"
+
+  fake-server:
+    desc: Simulates a long-running server process
+    cmds:
+      - echo "Starting server on port 8080..."
+      - while true; do echo "Server running... $(date)"; sleep 2; done
