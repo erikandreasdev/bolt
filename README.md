@@ -32,15 +32,14 @@ Everything you need to master Bolt:
    ```
 
 2. **Create `bolt.yml`**:
-   ```yaml
-tasks:
 
-  run:
+   ```yaml
+   tasks:
+   run:
     desc: Run the Spring Boot app
     cmds:
       - mvn spring-boot:run
-
-  test:
+   test:
     desc: Run unit tests
     cmds:
       - mvn test
