@@ -9,9 +9,9 @@ The simplest way to define tasks is using the **Simplified Format**:
 ```yaml
 # bolt.yml
 start:
-  desc: Start the development server
+  desc: Start the Spring Boot application
   cmds:
-    - npm run dev
+    - mvn spring-boot:run
 ```
 
 ## Recipe Book
@@ -20,43 +20,42 @@ start:
 To run commands in order, list them under `cmds`. Bolt joins them with `&&`, so if one fails, the chain stops.
 
 ```yaml
-deploy:
-  desc: Build and deploy the application
+remote-reload:
+  desc: Rebuild and restart the Docker container
   cmds:
-    - echo "Building..."
-    - npm run build
-    - echo "Deploying..."
-    - ./scripts/deploy.sh
+    - mvn clean package -DskipTests
+    - docker-compose down
+    - docker-compose up -d --build
+    - echo "Application reloaded!"
 ```
 
 ### ⚡ Pipes and Redirects
 Since Bolt runs commands in your shell (`sh -c`), you can use standard Shell operators like pipes (`|`) and redirects (`>`).
 
 ```yaml
-audit:
-  desc: Check for security vulnerabilities and save report
+deps:
+  desc: Analyze dependencies and save to file
   cmds:
-    # Pipe output to a file
-    - npm audit --json > audit_report.json
-    # Pipe output to another command
-    - cat audit_report.json | jq .metadata
+    # Save dependency tree to a file
+    - mvn dependency:tree > dependencies.txt
+    # Find specific conflicts
+    - cat dependencies.txt | grep "conflict"
 ```
 
 ### 📜 Multiline Scripts
 For complex logic, use YAML's block scalar syntax (`|`) to write multi-line scripts without creating separate files.
 
 ```yaml
-setup:
-  desc: Complex setup script
+release-check:
+  desc: Check git status before releasing
   cmds:
     - |
-      echo "Setting up environment..."
-      if [ ! -d "node_modules" ]; then
-        npm install
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "❌ Working directory not clean. Commit changes first."
+        exit 1
       else
-        echo "Dependencies already installed."
+        echo "✅ Ready to release."
       fi
-      echo "Setup complete!"
 ```
 
 ### 🌍 Environment Variables
@@ -64,30 +63,30 @@ You can set environment variables inline for specific commands.
 
 ```yaml
 test:
-  desc: Run tests with custom environment
+  desc: Run tests with different profiles
   cmds:
-    - NODE_ENV=test npm test
-    - DATABASE_URL=postgres://localhost:5432/test_db cargo test
+    - SPRING_PROFILES_ACTIVE=test mvn test
+    - DATABASE_URL=jdbc:postgresql://localhost:5432/test_db mvn test
 ```
 
 ### 🛡️ Ignoring Errors
 By default, the sequence stops if a command fails. To continue regardless of failure, append `|| true`.
 
 ```yaml
-clean:
-  desc: Clean up build artifacts (ignoring errors if files don't exist)
+clean-docker:
+  desc: Remove containers (ignoring errors if they don't exist)
   cmds:
-    - rm -rf dist || true
-    - rm -rf coverage || true
-    - echo "Clean complete"
+    - docker stop my-app || true
+    - docker rm my-app || true
+    - echo "Containers cleaned."
 ```
 
 ### 📂 Running Tasks in Background
 Tasks are interactive by default. For long-running processes (repls, servers), just define them normally. `Ctrl+C` will stop the task but keep Bolt running.
 
 ```yaml
-serve:
-  desc: Run the backend server
+log:
+  desc: Tail docker logs
   cmds:
-    - cargo run
+    - docker logs -f my-app
 ```

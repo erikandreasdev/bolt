@@ -1,53 +1,55 @@
 # Bolt ⚡
 
-**Bolt** is a lightning-fast, terminal-based task runner designed for developers who value speed, aesthetics, and simplicity. It turns your confusing scripts into a clean, searchable dashboard.
+> **The command center for your terminal.**
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Rust](https://img.shields.io/badge/built_with-Rust-orange.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Rust](https://img.shields.io/badge/built_with-Rust-orange.svg)
 
 ![Bolt Demo](assets/demo.gif)
 
-## 🚀 Features
+---
 
-- **Zero Config Overhead**: use the simplified `bolt.yml` format.
-- **Fuzzy Search**: Instantly find tasks by name.
-- **Resilient Execution**: Long-running processes are handled gracefully. `Ctrl+C` stops the process, not the runner.
-- **Visuals**: A sleek, high-contrast TUI (Text User Interface).
+## ⚡ Why Bolt?
 
-## 📖 Documentation
+**Speed. Aesthetics. Simplicity.**
+Turn your messy scripts into a clean, searchable, and interactive dashboard.
 
-- [**Installation**](docs/INSTALLATION.md) - Get up and running in seconds.
-- [**Configuration**](docs/CONFIGURATION.md) - Learn how to define your tasks.
-- [**Usage Guide**](docs/USAGE.md) - Tips on navigating the interface.
+## 📚 Documentation
 
-## ⚡ Quick Start
+Everything you need to master Bolt:
+
+| Topic | Description |
+| :--- | :--- |
+| [**Installation**](docs/INSTALLATION.md) | Get up and running in seconds |
+| [**Configuration**](docs/CONFIGURATION.md) | The `bolt.yml` cookbook |
+| [**Usage**](docs/USAGE.md) | Navigation and controls |
+| [**Contributing**](docs/CONTRIBUTING.md) | How to improve Bolt |
+
+## 🚀 Quick Start
 
 1. **Install Bolt**:
    ```bash
-   cargo install --git https://github.com/erikandreasdev/bolt
+   cargo install --git https://github.com/erik/bolt
    ```
 
-2. **Create a `bolt.yml`**:
+2. **Create `bolt.yml`**:
    ```yaml
-  start:
-   desc: Start the development server
-   cmds:
-      - npm run dev
+tasks:
+
+  run:
+    desc: Run the Spring Boot app
+    cmds:
+      - mvn spring-boot:run
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - mvn test
    ```
 
-3. **Run it**:
+3. **Run**:
    ```bash
    bolt
    ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
-
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
-## Acknowledgments
-
-- Inspired by [Taskfile.dev](https://taskfile.dev).
+---
+[MIT License](LICENSE) • Inspired by [Taskfile.dev](https://taskfile.dev)
