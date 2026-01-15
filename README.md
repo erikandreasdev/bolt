@@ -9,7 +9,7 @@
 
 ## 🚀 Features
 
-- **Zero Config Overhead**: compatible with `Taskfile` or use the simplified `bolt.yml` format.
+- **Zero Config Overhead**: use the simplified `bolt.yml` format.
 - **Fuzzy Search**: Instantly find tasks by name.
 - **Resilient Execution**: Long-running processes are handled gracefully. `Ctrl+C` stops the process, not the runner.
 - **Visuals**: A sleek, high-contrast TUI (Text User Interface).
@@ -47,3 +47,7 @@ Contributions are welcome! Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) f
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+- Inspired by [Taskfile.dev](https://taskfile.dev).

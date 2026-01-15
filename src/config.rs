@@ -15,7 +15,7 @@ pub struct Config {
     pub tasks: Vec<Task>,
 }
 
-// Taskfile.dev format structures
+// Explicit or Simplified format structures
 
 
 #[derive(Debug, Deserialize)]
@@ -32,14 +32,12 @@ impl Config {
         // Parse as generic YAML Value first to determine structure
         let value: serde_yaml::Value = serde_yaml::from_str(&content)?;
 
-        // Logic: If 'tasks' key exists, treat as Standard Taskfile. 
-        // Otherwise, treat the whole file as a map of Tasks (Simplified).
+        // Logic: If 'tasks' key exists, treat as Explicit format (tasks under 'tasks' key). 
+        // Otherwise, treat the whole file as a map of Tasks (Simplified format).
         let tasks_map: HashMap<String, TaskDefinition> = if let Some(tasks_val) = value.get("tasks") {
             serde_yaml::from_value(tasks_val.clone())?
         } else {
-            // Attempt to parse the root as a map of tasks, ignoring keys that don't look like tasks (like 'version')
-            // To be safe against common Taskfile keys being interpreted as tasks in mixed files,
-            // we can just try to parse.
+            // Attempt to parse the root as a map of tasks, ignoring keys that don't look like tasks.
             serde_yaml::from_value(value)?
         };
 
