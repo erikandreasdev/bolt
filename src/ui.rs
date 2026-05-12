@@ -123,9 +123,8 @@ fn render_footer(f: &mut Frame, area: Rect) {
 fn render_param_input(f: &mut Frame, app: &App) {
     let frame_size = f.size();
 
-    // 2 borders + blank + command line + blank + one row per filled param + current input + blank + hint
-    let content_rows = 5 + app.param_index as u16;
-    let height = content_rows.min(frame_size.height);
+    // 2 borders + blank + command + blank + filled params + current input + blank + hint = 8 base
+    let height = (8 + app.param_index as u16).min(frame_size.height);
     let width = (frame_size.width * 70 / 100).max(50).min(frame_size.width);
     let area = centered_rect(width, height, frame_size);
 
