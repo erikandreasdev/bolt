@@ -2,11 +2,11 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
     Frame,
 };
 
-use crate::app::App;
+use crate::app::{App, Mode};
 
 pub fn ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
@@ -20,16 +20,17 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Length(12),
-            Constraint::Min(1),
-        ])
+        .constraints([Constraint::Length(12), Constraint::Min(1)])
         .split(chunks[0]);
 
     render_logo(f, header_chunks[0]);
     render_search_bar(f, app, header_chunks[1]);
     render_task_list(f, app, chunks[1]);
     render_footer(f, chunks[2]);
+
+    if app.mode == Mode::ParamInput {
+        render_param_input(f, app);
+    }
 }
 
 fn render_logo(f: &mut Frame, area: Rect) {
@@ -107,15 +108,98 @@ fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
 }
 
 fn render_footer(f: &mut Frame, area: Rect) {
-    let current_keys_hint = Span::styled(
+    let hint = Span::styled(
         "(Esc) Quit | (Up/Down) Navigate | (Enter) Run | (Type) Search",
         Style::default().fg(Color::Cyan),
     );
-
-    let footer = Paragraph::new(Line::from(current_keys_hint)).block(
+    let footer = Paragraph::new(Line::from(hint)).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan)),
     );
     f.render_widget(footer, area);
+}
+
+fn render_param_input(f: &mut Frame, app: &App) {
+    let frame_size = f.size();
+
+    // 2 borders + blank + command line + blank + one row per filled param + current input + blank + hint
+    let content_rows = 5 + app.param_index as u16;
+    let height = content_rows.min(frame_size.height);
+    let width = (frame_size.width * 70 / 100).max(50).min(frame_size.width);
+    let area = centered_rect(width, height, frame_size);
+
+    f.render_widget(Clear, area);
+
+    let current_param = &app.param_names[app.param_index];
+
+    let mut lines: Vec<Line> = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            format!("  $ {}", app.command_template),
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC),
+        )),
+        Line::from(""),
+    ];
+
+    for (name, value) in app.param_names.iter().zip(app.param_values.iter()) {
+        lines.push(Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                name.as_str(),
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(" → ", Style::default().fg(Color::DarkGray)),
+            Span::styled(value.as_str(), Style::default().fg(Color::White)),
+        ]));
+    }
+
+    lines.push(Line::from(vec![
+        Span::raw("  "),
+        Span::styled(
+            current_param.as_str(),
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(" → ", Style::default().fg(Color::DarkGray)),
+        Span::styled(
+            format!("{}_", app.param_input),
+            Style::default().fg(Color::Yellow),
+        ),
+    ]));
+
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled(
+        "  (Enter) Confirm  (Esc) Cancel",
+        Style::default().fg(Color::DarkGray),
+    )));
+
+    let title = format!(
+        " Parameters: {} ({}/{}) ",
+        app.selected_task_name,
+        app.param_index + 1,
+        app.param_names.len()
+    );
+
+    let popup = Paragraph::new(lines).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan))
+            .title(Span::styled(
+                title,
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            )),
+    );
+
+    f.render_widget(popup, area);
+}
+
+fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
+    let x = r.x + r.width.saturating_sub(width) / 2;
+    let y = r.y + r.height.saturating_sub(height) / 2;
+    Rect {
+        x,
+        y,
+        width: width.min(r.width),
+        height: height.min(r.height),
+    }
 }

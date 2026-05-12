@@ -2,7 +2,7 @@ mod app;
 mod config;
 mod ui;
 
-use app::App;
+use app::{App, Mode};
 use config::Config;
 use crossterm::{
     cursor,
@@ -75,6 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         app.should_quit = false;
         app.selected_command = None;
+        app.mode = Mode::Browse;
 
         enable_raw_mode()?;
         // Guard ensures disable_raw_mode + LeaveAlternateScreen run on any exit path.
@@ -145,14 +146,23 @@ fn run_app<B: ratatui::backend::Backend>(
         terminal.draw(|f| ui(f, app))?;
 
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Esc => return Ok(()),
-                KeyCode::Enter => app.execute_selected(),
-                KeyCode::Up => app.select_previous(),
-                KeyCode::Down => app.select_next(),
-                KeyCode::Backspace => app.on_backspace(),
-                KeyCode::Char(c) => app.on_key(c),
-                _ => {}
+            match app.mode {
+                Mode::Browse => match key.code {
+                    KeyCode::Esc => return Ok(()),
+                    KeyCode::Enter => app.execute_selected(),
+                    KeyCode::Up => app.select_previous(),
+                    KeyCode::Down => app.select_next(),
+                    KeyCode::Backspace => app.on_backspace(),
+                    KeyCode::Char(c) => app.on_key(c),
+                    _ => {}
+                },
+                Mode::ParamInput => match key.code {
+                    KeyCode::Esc => app.cancel_param_input(),
+                    KeyCode::Enter => app.on_param_enter(),
+                    KeyCode::Backspace => app.on_param_backspace(),
+                    KeyCode::Char(c) => app.on_param_key(c),
+                    _ => {}
+                },
             }
         }
 
