@@ -28,7 +28,7 @@ Everything you need to master Bolt:
 
 1. **Install Bolt**:
    ```bash
-   cargo install --git https://github.com/erik/bolt
+   cargo install --git https://github.com/erikandreasdev/bolt
    ```
 
 2. **Create `bolt.yml`**:
