@@ -59,3 +59,8 @@ demo:
   desc: Record VHS demo tape
   cmds:
     - vhs demo.tape
+
+git-commit:
+  desc: Stage all changes and commit with a message — uses {message} parameter
+  cmds:
+    - git add -A && git commit -m "{message}"
