@@ -15,9 +15,6 @@ pub struct Config {
     pub tasks: Vec<Task>,
 }
 
-// Explicit or Simplified format structures
-
-
 #[derive(Debug, Deserialize)]
 struct TaskDefinition {
     desc: Option<String>,
@@ -28,33 +25,29 @@ struct TaskDefinition {
 impl Config {
     pub fn load(path: &str) -> Result<Self> {
         let content = fs::read_to_string(path)?;
-        
-        // Parse as generic YAML Value first to determine structure
-        let value: serde_yaml::Value = serde_yaml::from_str(&content)?;
+        Self::from_str(&content)
+    }
 
-        // Logic: If 'tasks' key exists, treat as Explicit format (tasks under 'tasks' key). 
-        // Otherwise, treat the whole file as a map of Tasks (Simplified format).
+    fn from_str(content: &str) -> Result<Self> {
+        let value: serde_yaml::Value = serde_yaml::from_str(content)?;
+
+        // If 'tasks' key exists treat as explicit format, otherwise simplified (root-level map).
         let tasks_map: HashMap<String, TaskDefinition> = if let Some(tasks_val) = value.get("tasks") {
             serde_yaml::from_value(tasks_val.clone())?
         } else {
-            // Attempt to parse the root as a map of tasks, ignoring keys that don't look like tasks.
             serde_yaml::from_value(value)?
         };
 
         let mut tasks: Vec<Task> = tasks_map
             .into_iter()
             .filter_map(|(name, def)| {
-                // If it's a version key or similar non-task key that slipped through in simplified mode,
-                // we might want to skip it. But generic parsing is lenient.
-                // For now, valid tasks must have commands.
-                
                 let cmds = def.cmds?;
                 if cmds.is_empty() {
                     return None;
                 }
-                
-                // Filter only string commands, ignore internal task calls for now
-                let valid_cmds: Vec<String> = cmds.into_iter()
+
+                let valid_cmds: Vec<String> = cmds
+                    .into_iter()
                     .filter_map(|cmd| {
                         if let serde_yaml::Value::String(s) = cmd {
                             Some(s)
@@ -68,18 +61,14 @@ impl Config {
                     return None;
                 }
 
-                // Join multiple commands with && for simple shell execution
-                let command = valid_cmds.join(" && ");
-                
                 Some(Task {
                     name,
-                    command,
+                    command: valid_cmds.join(" && "),
                     description: def.desc.unwrap_or_default(),
                 })
             })
             .collect();
 
-        // Sort by name for consistent display
         tasks.sort_by(|a, b| a.name.cmp(&b.name));
 
         Ok(Config { tasks })
@@ -91,18 +80,92 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_simple_config() {
-        let yaml = r#"
-        build:
-          desc: Build project
-          cmds:
-            - cargo build
-        "#;
-        
-        let value: serde_yaml::Value = serde_yaml::from_str(yaml).unwrap();
-        // We simulate the logic inside Config::load manually here or just test serde structure
-        let tasks_map: HashMap<String, TaskDefinition> = serde_yaml::from_value(value).unwrap();
-        
-        assert!(tasks_map.contains_key("build"));
+    fn test_load_simplified_format() {
+        let config = Config::from_str(r#"
+build:
+  desc: Build project
+  cmds:
+    - cargo build
+test:
+  desc: Run tests
+  cmds:
+    - cargo test
+"#)
+        .unwrap();
+
+        assert_eq!(config.tasks.len(), 2);
+        assert_eq!(config.tasks[0].name, "build");
+        assert_eq!(config.tasks[0].command, "cargo build");
+        assert_eq!(config.tasks[0].description, "Build project");
+        assert_eq!(config.tasks[1].name, "test");
+    }
+
+    #[test]
+    fn test_load_explicit_format() {
+        let config = Config::from_str(r#"
+tasks:
+  deploy:
+    desc: Deploy app
+    cmds:
+      - cargo build --release
+      - ./deploy.sh
+"#)
+        .unwrap();
+
+        assert_eq!(config.tasks.len(), 1);
+        assert_eq!(config.tasks[0].name, "deploy");
+        assert_eq!(config.tasks[0].command, "cargo build --release && ./deploy.sh");
+        assert_eq!(config.tasks[0].description, "Deploy app");
+    }
+
+    #[test]
+    fn test_tasks_sorted_by_name() {
+        let config = Config::from_str(r#"
+zebra:
+  desc: Last
+  cmds:
+    - echo z
+apple:
+  desc: First
+  cmds:
+    - echo a
+"#)
+        .unwrap();
+
+        assert_eq!(config.tasks[0].name, "apple");
+        assert_eq!(config.tasks[1].name, "zebra");
+    }
+
+    #[test]
+    fn test_empty_cmds_filtered_out() {
+        let config = Config::from_str(r#"
+valid:
+  desc: Valid task
+  cmds:
+    - echo hi
+empty:
+  desc: No commands
+  cmds: []
+"#)
+        .unwrap();
+
+        assert_eq!(config.tasks.len(), 1);
+        assert_eq!(config.tasks[0].name, "valid");
+    }
+
+    #[test]
+    fn test_missing_cmds_filtered_out() {
+        let config = Config::from_str(r#"
+valid:
+  desc: Valid
+  cmds:
+    - echo hi
+no_cmds:
+  desc: No cmds key
+"#)
+        .unwrap();
+
+        assert_eq!(config.tasks.len(), 1);
+        assert_eq!(config.tasks[0].name, "valid");
     }
 }

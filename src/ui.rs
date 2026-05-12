@@ -2,29 +2,27 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame,
 };
 
 use crate::app::App;
 
 pub fn ui(f: &mut Frame, app: &mut App) {
-    // Create the layout sections.
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3), // Header
-            Constraint::Min(1),    // List
-            Constraint::Length(3), // Help footer
+            Constraint::Length(3),
+            Constraint::Min(1),
+            Constraint::Length(3),
         ])
-        .split(f.size());
+        .split(f.size()); // upgrade to f.area() when ratatui >= 0.27
 
-    // Split header into Logo and Search
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Length(12), // Logo width " BOLT ⚡ " + borders
-            Constraint::Min(1),     // Search bar
+            Constraint::Length(12),
+            Constraint::Min(1),
         ])
         .split(chunks[0]);
 
@@ -55,20 +53,24 @@ fn render_search_bar(f: &mut Frame, app: &App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Cyan))
-                .title(Span::styled("Filter", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)))
+                .title(Span::styled(
+                    "Filter",
+                    Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                )),
         );
     f.render_widget(search_bar, area);
 }
 
 fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
     let tasks: Vec<ListItem> = app
-        .filtered_tasks
+        .filtered_indices
         .iter()
-        .map(|task| {
+        .map(|&i| {
+            let task = &app.tasks[i];
             let content = vec![
                 Line::from(Span::styled(
-                    format!(" {}", task.name), 
-                    Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)
+                    format!(" {}", task.name),
+                    Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
                 )),
                 Line::from(Span::styled(
                     format!("  {}", task.description),
@@ -78,7 +80,7 @@ fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
                     format!("  $ {}", task.command),
                     Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC),
                 )),
-                Line::from(""), // Spacing
+                Line::from(""),
             ];
             ListItem::new(content)
         })
@@ -89,7 +91,10 @@ fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Green))
-                .title(Span::styled("Tasks", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)))
+                .title(Span::styled(
+                    "Tasks",
+                    Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+                )),
         )
         .highlight_style(
             Style::default()
@@ -98,11 +103,7 @@ fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
         )
         .highlight_symbol("▎");
 
-    // We need to manage the list state (selection)
-    let mut state = ListState::default();
-    state.select(Some(app.selected_index));
-
-    f.render_stateful_widget(tasks_list, area, &mut state);
+    f.render_stateful_widget(tasks_list, area, &mut app.list_state);
 }
 
 fn render_footer(f: &mut Frame, area: Rect) {
@@ -111,11 +112,10 @@ fn render_footer(f: &mut Frame, area: Rect) {
         Style::default().fg(Color::Cyan),
     );
 
-    let footer = Paragraph::new(Line::from(current_keys_hint))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan))
-        );
+    let footer = Paragraph::new(Line::from(current_keys_hint)).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan)),
+    );
     f.render_widget(footer, area);
 }
