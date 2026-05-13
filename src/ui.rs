@@ -137,7 +137,7 @@ fn render_param_input(f: &mut Frame, app: &App) {
         Line::from(""),
         Line::from(Span::styled(
             format!("  $ {}", app.command_template),
-            Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC),
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC),
         )),
         Line::from(""),
     ];
