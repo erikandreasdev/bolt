@@ -124,7 +124,7 @@ fn render_param_input(f: &mut Frame, app: &App) {
     let frame_size = f.size();
 
     // 2 borders + blank + command line + blank + one row per filled param + current input + blank + hint
-    let content_rows = 5 + app.param_index as u16;
+    let content_rows = 8 + app.param_index as u16;
     let height = content_rows.min(frame_size.height);
     let width = (frame_size.width * 70 / 100).max(50).min(frame_size.width);
     let area = centered_rect(width, height, frame_size);
