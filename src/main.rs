@@ -156,7 +156,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
-) -> io::Result<()> {
+) -> io::Result<()>
+where
+    io::Error: From<B::Error>,
+{
     loop {
         terminal.draw(|f| ui(f, app))?;
 

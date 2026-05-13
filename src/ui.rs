@@ -16,7 +16,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             Constraint::Min(1),
             Constraint::Length(3),
         ])
-        .split(f.size()); // upgrade to f.area() when ratatui >= 0.27
+        .split(f.area());
 
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -121,7 +121,7 @@ fn render_footer(f: &mut Frame, area: Rect) {
 }
 
 fn render_param_input(f: &mut Frame, app: &App) {
-    let frame_size = f.size();
+    let frame_size = f.area();
 
     // 2 borders + blank + command line + blank + one row per filled param + current input + blank + hint
     let content_rows = 8 + app.param_index as u16;
