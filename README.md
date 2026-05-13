@@ -67,7 +67,15 @@ Turn your messy scripts into a clean, searchable, and interactive dashboard.
 
 ## ⚙️ Configuration
 
-Bolt reads `bolt.yml` (or `bolt.yaml`) from the current directory.
+Bolt searches for `bolt.yml` (or `bolt.yaml`) in this order:
+
+1. `.local/bolt.yml` — keeps the config out of version control
+2. `bolt.yml` in the project root
+3. A custom path via `--config <path>`
+
+```bash
+bolt --config path/to/bolt.yml
+```
 
 ```yaml
 tasks:

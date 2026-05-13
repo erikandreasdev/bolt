@@ -31,16 +31,31 @@ impl Drop for TerminalCleanup {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config_files = ["bolt.yml", "bolt.yaml"];
+    let args: Vec<String> = std::env::args().collect();
+    let explicit_config = args.windows(2).find_map(|w| {
+        if w[0] == "--config" { Some(w[1].clone()) } else { None }
+    });
+
+    let candidates: Vec<String> = if let Some(path) = explicit_config {
+        vec![path]
+    } else {
+        vec![
+            ".local/bolt.yml".into(),
+            ".local/bolt.yaml".into(),
+            "bolt.yml".into(),
+            "bolt.yaml".into(),
+        ]
+    };
+
     let mut loaded_config: Option<Config> = None;
     let mut used_path = String::new();
 
-    for path in config_files {
+    for path in &candidates {
         if std::path::Path::new(path).exists() {
             match Config::load(path) {
                 Ok(cfg) => {
                     loaded_config = Some(cfg);
-                    used_path = path.to_string();
+                    used_path = path.clone();
                     break;
                 }
                 Err(e) => {
@@ -53,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = match loaded_config {
         Some(cfg) => cfg,
         None => {
-            eprintln!("Could not find or parse bolt.yml or bolt.yaml");
+            eprintln!("Could not find bolt.yml in .local/ or project root. Use --config <path> to specify a custom location.");
             return Ok(());
         }
     };
