@@ -170,7 +170,7 @@ fn render_param_input(f: &mut Frame, app: &App) {
     lines.push(Line::from(""));
     lines.push(Line::from(Span::styled(
         "  (Enter) Confirm  (Esc) Cancel",
-        Style::default().fg(Color::DarkGray),
+        Style::default().fg(Color::Cyan),
     )));
 
     let title = format!(
