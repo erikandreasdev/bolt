@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use anyhow::Result;
+use serde_yml;
 
 #[derive(Debug, Clone)]
 pub struct Task {
@@ -19,7 +20,7 @@ pub struct Config {
 struct TaskDefinition {
     desc: Option<String>,
     #[serde(default)]
-    cmds: Option<Vec<serde_yaml::Value>>,
+    cmds: Option<Vec<serde_yml::Value>>,
 }
 
 impl Config {
@@ -29,13 +30,13 @@ impl Config {
     }
 
     fn from_str(content: &str) -> Result<Self> {
-        let value: serde_yaml::Value = serde_yaml::from_str(content)?;
+        let value: serde_yml::Value = serde_yml::from_str(content)?;
 
         // If 'tasks' key exists treat as explicit format, otherwise simplified (root-level map).
         let tasks_map: HashMap<String, TaskDefinition> = if let Some(tasks_val) = value.get("tasks") {
-            serde_yaml::from_value(tasks_val.clone())?
+            serde_yml::from_value(tasks_val.clone())?
         } else {
-            serde_yaml::from_value(value)?
+            serde_yml::from_value(value)?
         };
 
         let mut tasks: Vec<Task> = tasks_map
@@ -49,7 +50,7 @@ impl Config {
                 let valid_cmds: Vec<String> = cmds
                     .into_iter()
                     .filter_map(|cmd| {
-                        if let serde_yaml::Value::String(s) = cmd {
+                        if let serde_yml::Value::String(s) = cmd {
                             Some(s)
                         } else {
                             None
