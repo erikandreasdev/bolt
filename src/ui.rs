@@ -79,7 +79,7 @@ fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
                 )),
                 Line::from(Span::styled(
                     format!("  $ {}", task.command),
-                    Style::default().fg(Color::DarkGray).add_modifier(Modifier::ITALIC),
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC),
                 )),
                 Line::from(""),
             ];
