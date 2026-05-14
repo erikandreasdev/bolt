@@ -112,6 +112,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         if let Some(cmd_str) = &app.selected_command {
             println!("> Running: {}", cmd_str);
 
+            #[cfg(target_os = "windows")]
+            let status = Command::new("powershell")
+                .args(["-NoProfile", "-Command", cmd_str])
+                .status();
+            #[cfg(not(target_os = "windows"))]
             let status = Command::new("sh").arg("-c").arg(cmd_str).status();
 
             match status {
