@@ -25,7 +25,7 @@ Bolt is a terminal-based task runner TUI written in Rust with four modules:
 
 - **`src/ui.rs`** — Pure rendering; reads `App` state, emits ratatui widgets. Layout: header row (logo + search bar) / task list / footer. When `mode == ParamInput`, renders a centered popup over the list showing the command template, already-filled values, and the current input field.
 
-- **`src/main.rs`** — Entry point and event loop. Handles terminal setup/teardown via `TerminalCleanup` (RAII guard). After the TUI exits with a `selected_command`, runs it via `sh -c` in the normal terminal, then prompts the user to return to the menu or quit. `ctrlc` handler is set to a no-op so Ctrl+C in the child process doesn't kill the parent.
+- **`src/main.rs`** — Entry point and event loop. Handles terminal setup/teardown via `TerminalCleanup` (RAII guard). After the TUI exits with a `selected_command`, runs it via `sh -c` (Unix/macOS) or `cmd /C` (Windows) in the normal terminal, then prompts the user to return to the menu or quit. `ctrlc` handler is set to a no-op so Ctrl+C in the child process doesn't kill the parent.
 
 ## Config file resolution order
 
