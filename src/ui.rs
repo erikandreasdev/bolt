@@ -8,19 +8,27 @@ use ratatui::{
 
 use crate::app::{App, Mode};
 
+const HEADER_HEIGHT: u16 = 3;
+const FOOTER_HEIGHT: u16 = 3;
+const LOGO_WIDTH: u16 = 12;
+const POPUP_WIDTH_PERCENT: u16 = 70;
+const POPUP_MIN_WIDTH: u16 = 50;
+const POPUP_BASE_CONTENT_ROWS: u16 = 8;
+const HIGHLIGHT_SYMBOL: &str = "▎";
+
 pub fn ui(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(HEADER_HEIGHT),
             Constraint::Min(1),
-            Constraint::Length(3),
+            Constraint::Length(FOOTER_HEIGHT),
         ])
         .split(f.area());
 
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(12), Constraint::Min(1)])
+        .constraints([Constraint::Length(LOGO_WIDTH), Constraint::Min(1)])
         .split(chunks[0]);
 
     render_logo(f, header_chunks[0]);
@@ -102,7 +110,7 @@ fn render_task_list(f: &mut Frame, app: &mut App, area: Rect) {
                 .bg(Color::DarkGray)
                 .add_modifier(Modifier::BOLD),
         )
-        .highlight_symbol("▎");
+        .highlight_symbol(HIGHLIGHT_SYMBOL);
 
     f.render_stateful_widget(tasks_list, area, &mut app.list_state);
 }
@@ -124,9 +132,11 @@ fn render_param_input(f: &mut Frame, app: &App) {
     let frame_size = f.area();
 
     // 2 borders + blank + command line + blank + one row per filled param + current input + blank + hint
-    let content_rows = 8 + app.param_index as u16;
+    let content_rows = POPUP_BASE_CONTENT_ROWS + app.param_index as u16;
     let height = content_rows.min(frame_size.height);
-    let width = (frame_size.width * 70 / 100).max(50).min(frame_size.width);
+    let width = (frame_size.width as u32 * POPUP_WIDTH_PERCENT as u32 / 100)
+        .max(POPUP_MIN_WIDTH as u32)
+        .min(frame_size.width as u32) as u16;
     let area = centered_rect(width, height, frame_size);
 
     f.render_widget(Clear, area);

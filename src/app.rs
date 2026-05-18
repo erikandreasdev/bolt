@@ -2,6 +2,7 @@ use crate::config::Task;
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use ratatui::widgets::ListState;
+use std::cmp::Reverse;
 
 #[derive(Debug, PartialEq)]
 pub enum Mode {
@@ -24,6 +25,19 @@ pub struct App {
     pub param_input: String,
     pub command_template: String,
     pub selected_task_name: String,
+}
+
+impl std::fmt::Debug for App {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("App")
+            .field("tasks", &self.tasks)
+            .field("filtered_indices", &self.filtered_indices)
+            .field("search_query", &self.search_query)
+            .field("should_quit", &self.should_quit)
+            .field("mode", &self.mode)
+            .field("matcher", &"<SkimMatcherV2>")
+            .finish_non_exhaustive()
+    }
 }
 
 impl App {
@@ -49,6 +63,12 @@ impl App {
             command_template: String::new(),
             selected_task_name: String::new(),
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.should_quit = false;
+        self.selected_command = None;
+        self.mode = Mode::Browse;
     }
 
     fn selected_index(&self) -> usize {
@@ -80,7 +100,7 @@ impl App {
                 })
                 .collect();
 
-            matches.sort_by(|a, b| b.0.cmp(&a.0));
+            matches.sort_by_key(|&(score, _)| Reverse(score));
             self.filtered_indices = matches.into_iter().map(|(_, i)| i).collect();
         }
 
@@ -100,12 +120,9 @@ impl App {
 
     pub fn select_previous(&mut self) {
         if !self.filtered_indices.is_empty() {
-            let i = if self.selected_index() > 0 {
-                self.selected_index() - 1
-            } else {
-                self.filtered_indices.len() - 1
-            };
-            self.list_state.select(Some(i));
+            let current = self.selected_index();
+            let len = self.filtered_indices.len();
+            self.list_state.select(Some((current + len - 1) % len));
         }
     }
 
@@ -163,31 +180,32 @@ impl App {
 }
 
 // Extracts unique {placeholder} names from a command string, in order of first appearance.
+// Names must be non-empty and contain only alphanumeric characters or underscores.
+// Nested or malformed braces (e.g. `{a{b}`, `{}`, `{a-b}`) are skipped gracefully.
 fn extract_params(command: &str) -> Vec<String> {
-    let mut params = Vec::new();
+    let mut params: Vec<String> = Vec::new();
     let mut seen = std::collections::HashSet::new();
-    let bytes = command.as_bytes();
-    let mut i = 0;
+    let mut rest = command;
 
-    while i < bytes.len() {
-        if bytes[i] == b'{' {
-            let start = i + 1;
-            let mut j = start;
-            while j < bytes.len() && bytes[j] != b'}' && bytes[j] != b'{' {
-                j += 1;
-            }
-            if j < bytes.len() && bytes[j] == b'}' && j > start {
-                let name = &command[start..j];
-                if !name.is_empty() && name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                    if seen.insert(name.to_string()) {
-                        params.push(name.to_string());
-                    }
+    while let Some(open) = rest.find('{') {
+        rest = &rest[open + 1..];
+        let end = rest.char_indices().find(|&(_, c)| c == '}' || c == '{');
+        match end {
+            Some((i, '}')) if i > 0 => {
+                let name = &rest[..i];
+                if name.chars().all(|c| c.is_alphanumeric() || c == '_')
+                    && seen.insert(name.to_string())
+                {
+                    params.push(name.to_string());
                 }
-                i = j + 1;
-                continue;
+                rest = &rest[i + 1..];
             }
+            Some((i, _)) => {
+                // Nested '{' or empty '}': reposition before that char and re-scan.
+                rest = &rest[i..];
+            }
+            None => break,
         }
-        i += 1;
     }
 
     params
@@ -196,6 +214,21 @@ fn extract_params(command: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::Task;
+
+    fn make_app(names: &[&str]) -> App {
+        let tasks = names
+            .iter()
+            .map(|&n| Task {
+                name: n.to_string(),
+                command: format!("echo {}", n),
+                description: String::new(),
+            })
+            .collect();
+        App::new(tasks)
+    }
+
+    // --- extract_params ---
 
     #[test]
     fn test_extract_params_none() {
@@ -223,5 +256,183 @@ mod tests {
     #[test]
     fn test_extract_params_ignores_invalid() {
         assert!(extract_params("awk '{print $1}'").is_empty());
+    }
+
+    #[test]
+    fn test_extract_params_adjacent_braces() {
+        assert_eq!(extract_params("cmd {a}{b}"), vec!["a", "b"]);
+    }
+
+    #[test]
+    fn test_extract_params_empty_braces() {
+        assert!(extract_params("cmd {}").is_empty());
+    }
+
+    #[test]
+    fn test_extract_params_invalid_chars_in_name() {
+        assert!(extract_params("cmd {a-b}").is_empty());
+    }
+
+    #[test]
+    fn test_extract_params_nested_open_brace() {
+        // {a{b} — outer brace encounters nested '{', skips it; inner {b} is valid
+        assert_eq!(extract_params("cmd {a{b}"), vec!["b"]);
+    }
+
+    // --- App::new ---
+
+    #[test]
+    fn test_app_new_selects_first() {
+        let app = make_app(&["alpha", "beta"]);
+        assert_eq!(app.list_state.selected(), Some(0));
+        assert_eq!(app.filtered_indices, vec![0, 1]);
+        assert_eq!(app.mode, Mode::Browse);
+        assert!(!app.should_quit);
+        assert!(app.selected_command.is_none());
+    }
+
+    #[test]
+    fn test_app_new_empty_tasks() {
+        let app = make_app(&[]);
+        assert_eq!(app.list_state.selected(), None);
+        assert!(app.filtered_indices.is_empty());
+    }
+
+    // --- filter ---
+
+    #[test]
+    fn test_update_filter_narrows_list() {
+        let mut app = make_app(&["alpha", "zzz", "zzz2"]);
+        app.on_key('a');
+        app.on_key('l');
+        app.on_key('p');
+        let names: Vec<&str> = app
+            .filtered_indices
+            .iter()
+            .map(|&i| app.tasks[i].name.as_str())
+            .collect();
+        assert!(names.contains(&"alpha"), "alpha must appear in filtered results for 'alp'");
+        assert!(!names.contains(&"zzz"), "zzz should not match 'alp'");
+    }
+
+    #[test]
+    fn test_update_filter_empty_query_shows_all() {
+        let mut app = make_app(&["alpha", "beta"]);
+        app.on_key('a');
+        app.on_backspace();
+        assert_eq!(app.filtered_indices.len(), 2);
+    }
+
+    // --- navigation ---
+
+    #[test]
+    fn test_select_next_wraps() {
+        let mut app = make_app(&["a", "b", "c"]);
+        app.list_state.select(Some(2));
+        app.select_next();
+        assert_eq!(app.list_state.selected(), Some(0));
+    }
+
+    #[test]
+    fn test_select_previous_wraps() {
+        let mut app = make_app(&["a", "b", "c"]);
+        app.list_state.select(Some(0));
+        app.select_previous();
+        assert_eq!(app.list_state.selected(), Some(2));
+    }
+
+    // --- execute_selected ---
+
+    #[test]
+    fn test_execute_selected_no_params() {
+        let mut app = make_app(&["build"]);
+        app.execute_selected();
+        assert!(app.should_quit);
+        assert_eq!(app.selected_command, Some("echo build".to_string()));
+    }
+
+    #[test]
+    fn test_execute_selected_with_params_enters_param_mode() {
+        let tasks = vec![Task {
+            name: "greet".to_string(),
+            command: "echo {name}".to_string(),
+            description: String::new(),
+        }];
+        let mut app = App::new(tasks);
+        app.execute_selected();
+        assert_eq!(app.mode, Mode::ParamInput);
+        assert_eq!(app.param_names, vec!["name"]);
+        assert!(!app.should_quit);
+    }
+
+    // --- param input ---
+
+    #[test]
+    fn test_param_enter_completes_command() {
+        let tasks = vec![Task {
+            name: "greet".to_string(),
+            command: "echo {name}".to_string(),
+            description: String::new(),
+        }];
+        let mut app = App::new(tasks);
+        app.execute_selected();
+        for c in "world".chars() {
+            app.on_param_key(c);
+        }
+        app.on_param_enter();
+        assert!(app.should_quit);
+        assert_eq!(app.selected_command, Some("echo world".to_string()));
+    }
+
+    #[test]
+    fn test_param_enter_multi_param() {
+        let tasks = vec![Task {
+            name: "copy".to_string(),
+            command: "cp {src} {dst}".to_string(),
+            description: String::new(),
+        }];
+        let mut app = App::new(tasks);
+        app.execute_selected();
+        // Fill first param
+        for c in "a.txt".chars() {
+            app.on_param_key(c);
+        }
+        app.on_param_enter();
+        assert!(!app.should_quit, "should not quit after first param");
+        // Fill second param
+        for c in "b.txt".chars() {
+            app.on_param_key(c);
+        }
+        app.on_param_enter();
+        assert!(app.should_quit);
+        assert_eq!(app.selected_command, Some("cp a.txt b.txt".to_string()));
+    }
+
+    #[test]
+    fn test_cancel_param_input_returns_to_browse() {
+        let tasks = vec![Task {
+            name: "greet".to_string(),
+            command: "echo {name}".to_string(),
+            description: String::new(),
+        }];
+        let mut app = App::new(tasks);
+        app.execute_selected();
+        assert_eq!(app.mode, Mode::ParamInput);
+        app.cancel_param_input();
+        assert_eq!(app.mode, Mode::Browse);
+        assert!(app.param_names.is_empty());
+    }
+
+    // --- reset ---
+
+    #[test]
+    fn test_reset_clears_quit_and_command() {
+        let mut app = make_app(&["build"]);
+        app.execute_selected();
+        assert!(app.should_quit);
+        app.reset();
+        assert!(!app.should_quit);
+        assert!(app.selected_command.is_none());
+        assert_eq!(app.mode, Mode::Browse);
     }
 }

@@ -2,7 +2,6 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use anyhow::Result;
-use serde_yml;
 
 #[derive(Debug, Clone)]
 pub struct Task {
@@ -168,5 +167,30 @@ no_cmds:
 
         assert_eq!(config.tasks.len(), 1);
         assert_eq!(config.tasks[0].name, "valid");
+    }
+
+    #[test]
+    fn test_invalid_yaml_returns_error() {
+        let result = Config::from_str("{ invalid yaml: [unclosed");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_tasks_key_ignores_root_siblings() {
+        // When a `tasks:` key is present, root-level siblings outside it are ignored.
+        let config = Config::from_str(r#"
+tasks:
+  deploy:
+    desc: Deploy
+    cmds:
+      - ./deploy.sh
+orphan:
+  desc: Outside tasks key
+  cmds:
+    - echo orphan
+"#)
+        .unwrap();
+        assert_eq!(config.tasks.len(), 1);
+        assert_eq!(config.tasks[0].name, "deploy");
     }
 }

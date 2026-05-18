@@ -14,6 +14,13 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use std::{error::Error, io, process::Command};
 use ui::ui;
 
+const CONFIG_SEARCH_PATHS: &[&str] = &[
+    ".local/bolt.yml",
+    ".local/bolt.yaml",
+    "bolt.yml",
+    "bolt.yaml",
+];
+
 // Restores the terminal to its original state on drop, ensuring cleanup even on
 // early returns or panics between enable_raw_mode() and the matching teardown.
 struct TerminalCleanup;
@@ -39,12 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let candidates: Vec<String> = if let Some(path) = explicit_config {
         vec![path]
     } else {
-        vec![
-            ".local/bolt.yml".into(),
-            ".local/bolt.yaml".into(),
-            "bolt.yml".into(),
-            "bolt.yaml".into(),
-        ]
+        CONFIG_SEARCH_PATHS.iter().map(|s| s.to_string()).collect()
     };
 
     let mut loaded_config: Option<Config> = None;
@@ -83,14 +85,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // When a child process runs (raw mode disabled), Ctrl+C sends SIGINT to the
     // whole process group. The child handles it; the parent should ignore it and
     // return to the menu.
-    let _ = ctrlc::set_handler(move || {});
+    if let Err(e) = ctrlc::set_handler(move || {}) {
+        eprintln!("Warning: could not set Ctrl+C handler: {}", e);
+    }
 
     let mut app = App::new(config.tasks);
 
     loop {
-        app.should_quit = false;
-        app.selected_command = None;
-        app.mode = Mode::Browse;
+        app.reset();
 
         enable_raw_mode()?;
         // Guard ensures disable_raw_mode + LeaveAlternateScreen run on any exit path.
@@ -139,7 +141,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     }
                     Ok(_) => continue,
                     Err(e) => {
-                        let _ = disable_raw_mode();
+                        let _ = disable_raw_mode(); // best-effort cleanup before propagating
                         return Err(e.into());
                     }
                 }
