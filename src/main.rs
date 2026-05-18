@@ -112,7 +112,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         if let Some(cmd_str) = &app.selected_command {
             println!("> Running: {}", cmd_str);
 
-            let status = Command::new("sh").arg("-c").arg(cmd_str).status();
+            let status = if cfg!(windows) {
+                Command::new("cmd").args(["/C", cmd_str]).status()
+            } else {
+                Command::new("sh").arg("-c").arg(cmd_str).status()
+            };
 
             match status {
                 Ok(s) => {
